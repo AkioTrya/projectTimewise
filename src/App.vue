@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 
+const currentPage = ref('timer');
+
 let intervalid = null
 const startTimer = () => {
   if (!isRunning.value) {
@@ -132,17 +134,19 @@ const toggleTheme = () => {
 const applyTheme = ()=> {
   const root = document.documentElement;
   if (isDarkMode.value) {
-  root.style.setProperty('--bg', '#1e1e2f');
+    root.style.setProperty('--bg', '#1e1e2f');
     root.style.setProperty('--text', '#ffffff');
     root.style.setProperty('--card-bg', '#2d2d44');
     root.style.setProperty('--button-bg', '#3a3a5a');
     root.style.setProperty('--button-hover', '#4a4a6e');
+    root.style.setProperty('--border', '#3a3a5a');
   } else {
     root.style.setProperty('--bg', '#f5f5f7');
     root.style.setProperty('--text', '#222222');
     root.style.setProperty('--card-bg', '#ffffff');
     root.style.setProperty('--button-bg', '#e0e0e6');
     root.style.setProperty('--button-hover', '#ccccd6');
+    root.style.setProperty('--border', '#e0e0e6');
   };
 }
 
@@ -157,35 +161,88 @@ if (savedTheme === 'dark') {
 </script>
 
 <template>
-  <div class="app">
-    <button class="theme-toggle" @click="toggleTheme">
-      {{ isDarkMode ? '☀️' : '🌙' }}
-    </button>
-    <h1>🍅 Timewise</h1>
-    <div class="mode">
-      <span v-if="isWorkMode">💪 Work Time ({{ workSessionCompleted }} sessions)</span>
-      <span v-else>
-        ☕ 
-        <span v-if="workSessionCompleted % 4 === 0 && workSessionCompleted !== 0">Long Break</span>
-        <span v-else>Short Break</span>
-      </span>
-    </div>
-    <div class="timer-card">
-      <div class="timer-display">{{ formattedTime }}</div>
-      <div class="buttons">
-        <button @click="startTimer">Start</button>
-        <button @click="pauseTimer">Pause</button>
-        <button @click="resetTimer">Reset</button>
-        <button @click="addFiveMinutes">+5 min</button>
-        <button @click="resetSession">Reset sessions</button>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="logo-area">🍅 Timewise</div>
+      <nav>
+        <button :class="{ active: currentPage === 'timer' }" @click="currentPage = 'timer'">Timer</button>
+        <button :class="{ active: currentPage === 'tasks' }" @click="currentPage = 'tasks'">Tasks</button>
+        <button :class="{ active: currentPage === 'history' }" @click="currentPage = 'history'">History</button>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="theme-toggle" @click="toggleTheme">
+          {{ isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode' }}
+        </button>
       </div>
-      <div class="stats">Today: {{ todaySessions }} pomodoro(s)</div>
-      <div class="status">
-        <span v-if="isPaused">Paused</span>
-        <span v-else-if="isRunning">Focusing...</span>
-        <span v-else>Ready</span>
+    </aside>
+
+    <main class="main-content">
+      <div class="center-container">
+        
+        <div v-if="currentPage === 'timer'" class="view-timer">
+          <header class="top-nav">
+            <div class="nav-logo">🍅 Timewise</div>
+            <button class="icon-btn">⚙️ Settings</button>
+          </header>
+          
+          <div class="timer-center-wrapper">
+            <div class="mode">
+              <span v-if="isWorkMode">💪 Work Time ({{ workSessionCompleted }} sessions)</span>
+              <span v-else>
+                ☕ 
+                <span v-if="workSessionCompleted % 4 === 0 && workSessionCompleted !== 0">Long Break</span>
+                <span v-else>Short Break</span>
+              </span>
+            </div>
+            
+            <div class="timer-card">
+              <div class="timer-display">{{ formattedTime }}</div>
+              <div class="buttons">
+                <button @click="startTimer">Start</button>
+                <button @click="pauseTimer">Pause</button>
+                <button @click="resetTimer">Reset</button>
+                <button @click="addFiveMinutes">+5 min</button>
+                <button @click="resetSession">Reset sessions</button>
+              </div>
+              <div class="stats">Today: {{ todayHistory }} pomodoro(s)</div>
+              <div class="status">
+                <span v-if="isPaused">Paused</span>
+                <span v-else-if="isRunning">Focusing...</span>
+                <span v-else>Ready</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="currentPage === 'tasks'" class="view-tasks">
+          <h2>Tasks</h2>
+          <div class="tasks-layout">
+            <div class="calendar-column">
+              <h3>Calendar</h3>
+              <div class="placeholder-box">Calendar View Placeholder</div>
+            </div>
+            <div class="task-list-column">
+              <h3>To Do</h3>
+              <div class="placeholder-box">Task List Placeholder</div>
+              <div class="placeholder-box">Task List Placeholder</div>
+              <div class="placeholder-box">Task List Placeholder</div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="currentPage === 'history'" class="view-history">
+          <h2>Session History</h2>
+          <div class="history-grid">
+            <div class="history-card" v-for="session in sessionHistory.slice().reverse()" :key="session.timestamp">
+              <div class="type">{{ session.type === 'work' ? '💪 Work Session' : '☕ Break' }}</div>
+              <div class="time">{{ new Date(session.timestamp).toLocaleString() }}</div>
+            </div>
+            <div v-if="sessionHistory.length === 0" class="empty-state">No history yet.</div>
+          </div>
+        </div>
+
       </div>
-    </div>
+    </main>
   </div>
 </template>
 
@@ -197,6 +254,7 @@ if (savedTheme === 'dark') {
   --card-bg: #ffffff;
   --button-bg: #e0e0e6;
   --button-hover: #ccccd6;
+  --border: #e0e0e6;
   --accent: #4caf50;
 }
 
@@ -211,31 +269,142 @@ body {
   color: var(--text);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   transition: background 0.3s, color 0.2s;
+  overflow: hidden; /* we manage scroll in .main-content */
 }
 
-.app {
-  max-width: 600px;
+.layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+.sidebar {
+  width: 260px;
+  background: var(--card-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 1.5rem;
+}
+
+.logo-area {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.sidebar nav button {
+  text-align: left;
+  background: transparent;
+  color: var(--text);
+  padding: 0.8rem 1.2rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+
+.sidebar nav button:hover {
+  background: var(--button-hover);
+}
+
+.sidebar nav button.active {
+  background: var(--button-bg);
+  font-weight: bold;
+  border: 1px solid var(--border);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+}
+
+.theme-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+}
+
+.center-container {
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-  min-height: 100vh;
+  padding: 2.5rem;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Timer View */
+.view-timer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.top-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+
+.nav-logo {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.icon-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.timer-center-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .timer-card {
+  width: 100%;
+  max-width: 480px;
   background: var(--card-bg);
   border-radius: 2rem;
-  padding: 2rem;
+  padding: 3rem;
   margin: 2rem 0;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.06);
   transition: background 0.3s;
+  text-align: center;
+  border: 1px solid var(--border);
 }
 
 .timer-display {
-  font-size: 5rem;
+  font-size: 6rem;
   font-weight: bold;
   font-family: monospace;
   letter-spacing: 4px;
-  margin: 1rem 0;
+  margin: 1.5rem 0;
 }
 
 .buttons {
@@ -243,13 +412,13 @@ body {
   gap: 0.8rem;
   justify-content: center;
   flex-wrap: wrap;
-  margin: 1.5rem 0;
+  margin: 2rem 0;
 }
 
 button {
   background: var(--button-bg);
   border: none;
-  padding: 0.6rem 1.2rem;
+  padding: 0.7rem 1.4rem;
   border-radius: 2rem;
   font-size: 1rem;
   font-weight: 500;
@@ -266,9 +435,9 @@ button:active {
 }
 
 .mode {
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   font-weight: bold;
-  margin-bottom: 1rem;
+  text-align: center;
 }
 
 .status {
@@ -278,17 +447,78 @@ button:active {
 }
 
 .stats {
-  margin-top: 1rem;
-  font-size: 1rem;
+  margin-top: 1.5rem;
+  font-size: 1.1rem;
+  opacity: 0.9;
 }
 
-.theme-toggle {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  background: var(--button-bg);
-  border-radius: 2rem;
-  padding: 0.4rem 1rem;
+/* Tasks Layout */
+.view-tasks h2, .view-history h2 {
+  margin-bottom: 2rem;
+  font-size: 2rem;
+}
+
+.tasks-layout {
+  display: flex;
+  gap: 3rem;
+  height: 100%;
+}
+.calendar-column {
+  flex: 0 0 30%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.task-list-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* History Layout */
+.history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.history-card {
+  background: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+}
+
+.history-card .type {
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.history-card .time {
+  font-size: 0.95rem;
+  opacity: 0.7;
+}
+
+.placeholder-box {
+  background: var(--card-bg);
+  padding: 2rem;
+  border-radius: 1rem;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  border: 1px dashed var(--border);
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4rem;
+  opacity: 0.6;
   font-size: 1.2rem;
 }
 </style>
